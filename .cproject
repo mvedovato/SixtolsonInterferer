@@ -55,6 +55,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/UART}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SCTIMER}&quot;"/>
 								</option>
+								<option id="com.crt.advproject.gcc.exe.debug.option.optimization.level.1440147107" superClass="com.crt.advproject.gcc.exe.debug.option.optimization.level" useByScannerDiscovery="true"/>
 								<inputType id="com.crt.advproject.compiler.input.163720741" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gas.exe.debug.1433344021" name="MCU Assembler" superClass="com.crt.advproject.gas.exe.debug">
@@ -93,6 +94,7 @@
 								<option id="com.crt.advproject.link.gcc.hdrlib.1934248659" name="Library" superClass="com.crt.advproject.link.gcc.hdrlib" value="com.crt.advproject.gcc.link.hdrlib.codered.none" valueType="enumerated"/>
 								<option id="com.crt.advproject.link.crpenable.901597212" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.crpenable" value="true" valueType="boolean"/>
 								<option id="com.crt.advproject.link.fpu.489898135" name="Floating point" superClass="com.crt.advproject.link.fpu"/>
+								<option id="com.crt.advproject.link.gcc.multicore.master.1480747496" superClass="com.crt.advproject.link.gcc.multicore.master"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.1590612715" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -249,4 +251,5 @@
 	<storageModule moduleId="refreshScope"/>
 	<storageModule moduleId="com.crt.advproject"/>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+	<storageModule moduleId="openCmsis"/>
 </cproject>

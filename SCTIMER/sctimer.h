@@ -9,16 +9,16 @@
 #define SCTIMER_H_
 
 #include <LPC845.h>
-#define	DUTYaCTIVOaLTO
+//#define	DUTYaCTIVOaLTO
 #define DACMATCH0				48000		//1ms -> clk system 48MHz
 #define	STEPSpWM				1000
 #define PWM						14
 #define OUT0					0
-#define PWM_FREQ				50
+#define PWM_FREQ				10000
 #define PWM_PERIOD				(FREQ_PRINCIPAL / (PWM_FREQ * 2))	//
 #define PWM_STEP				(PWM_PERIOD / STEPSpWM)		// PWM resolution in PWM_STEP steps
 #define	FULLpWM					PWM_FREQ
-#define	CANTdUTYS				10
+#define	CANTdUTYS				200
 #define DOScOMAcINCOmILIS		60000
 #define UNOcOMAcINCOmILIS		36000
 #define UNmILIS					24000
