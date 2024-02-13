@@ -210,36 +210,7 @@ void TimerClose(void)
 */
 void EV_parpadeo (void)
 {
-	static uint8_t tic = 0;
-	switch(tic)
-	{
-		case 0:
-				GPIO_Set( PIN_VERDE, LED_ON );
-				break;
-		case 1:
-				GPIO_Set( PIN_VERDE, LED_OFF );
-				break;
-		case 2:
-				GPIO_Set( PIN_ROJO, LED_ON );
-				break;
-		case 3:
-				GPIO_Set( PIN_ROJO, LED_OFF );
-				break;
-		case 4:
-				GPIO_Set( PIN_AZUL, LED_ON );
-				break;
-		case 5:
-				GPIO_Set( PIN_AZUL, LED_OFF );
-				break;
 
-		default:
-				break;
-
-	}
-
-	tic ++;
-	tic %=6 ;
-    TimerStart( 0 , 1 , EV_parpadeo, SEG );
 
 }
 

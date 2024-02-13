@@ -1,0 +1,75 @@
+Get Default:
+Name : sctimerInfo
+	Details:{
+	enableCounterUnify = true, 
+	clockMode = kSCTIMER_System_ClockMode, 
+	clockSelect = kSCTIMER_Clock_On_Rise_Input_0, 
+	enableBidirection_l = false, 
+	enableBidirection_h = false, 
+	prescale_l = 0 '\0', 
+	prescale_h = 0 '\0', 
+	outInitState = 0 '\0', 
+	inputsync = 15 '\017'}
+	Default:{...}
+	
+Puntero a lo anterior
+ame : sctimerInfo
+	Details:{enableCounterUnify = true, 
+	clockMode = kSCTIMER_System_ClockMode, 
+	clockSelect = kSCTIMER_Clock_On_Rise_Input_0, 
+	enableBidirection_l = false, 
+	enableBidirection_h = false, 
+	prescale_l = 0 '\0', 
+	prescale_h = 0 '\0', 
+	outInitState = 0 '\0', 
+	inputsync = 15 '\017'}
+	Default:{...}
+		
+Init:
+*config es el anterior
+
+1) Habilita clock
+2) Reset peripheral SCT
+3) CONFIG:
+	clockSelect = kSCTIMER_Clock_On_Rise_Input_0, 
+	clockMode = kSCTIMER_System_ClockMode,
+	enableCounterUnify = true,
+	inputsync = 15 '\017'
+4) CTRL:
+	enableBidirection_l = false, 
+	prescale_l = 0 '\0', 
+	SCT_CTRL_HALT_L_MASK
+5) CTRL |= SCT_CTRL_CLRCTR_L_MASK;
+6) CTRL |= 
+	enableBidirection_h = false, 
+	enableBidirection_h = false,
+	SCT_CTRL_HALT_L_MASK
+7) CTRL |= SCT_CTRL_CLRCTR_L_MASK;
+8) OUTPUT = outInitState = 0 '\0', 
+9) Salida pinassign
+10) Level activity
+11) Variable duty
+12) Setup PWM:
+    mode: centerAligned
+    clock: main
+    Freq: 50
+    *event: 0
+    
+	CTRL |= SCT_CTRL_BIDIR_L_MASK;
+	period = sctClock / (pwmFreq_Hz * 2U);
+	 /* For 100% dutycyle, make pulse period greater than period so the event will never occur */  --> OJO; VER SI AFECTA NO RESETEAR
+	if (pwmParams->dutyCyclePercent >= 100U)
+	{
+		pulsePeriod = period + 2U;
+	}
+	else
+	{
+		pulsePeriod = (uint32_t)(((uint64_t)period * pwmParams->dutyCyclePercent) / 100U);
+	}
+13) Habilitar interrupción
+ SCTIMER_EnableInterrupts(SCT0, (1 << eventNumberOutput));
+ eventNumberOutput: 0
+14) Callback
+15) NVIC
+16) Start SCTimer
+ 

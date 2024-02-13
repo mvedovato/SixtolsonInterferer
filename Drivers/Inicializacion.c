@@ -14,12 +14,12 @@ void Inicializar( void )
     Inicializar_GPIO( );
     //Inicializar_CTimer0();
     //Inicializar_Teclado( );
-    Inicializar_IO();
+    //Inicializar_IO();
     Inicializar_UART1(9600);
     //Inicializar_LCD(  );
     //SCT_Init( );
-    //SCTimer_Init();
-    Inicializar_SCTimer( );
+    SCTimer_Init();
+    //Inicializar_SCTimer( );
 
 
 }

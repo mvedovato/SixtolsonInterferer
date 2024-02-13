@@ -8,9 +8,12 @@
 #include "sctimer.h"
 #include "gpio.h"
 
-const uint8_t vectorDutys[]={100,56,0,0,0,0,0,0,0,0,100,100,100,100,52,0,0,0,0,0,100,100,100,100,100,100,100,4,0,0,100,100,100,100,100,100,100,100,87,0,100,100,100,100,100,100,100,100,100,84,100,100,100,100,100,100,100,100,100,84,100,100,100,100,100,100,100,100,87,0,100,100,100,100,100,100,100,4,0,0,100,100,100,100,52,0,0,0,0,0,100,56,0,0,0,0,0,0,0,0};
-//const uint8_t vectorDutys[]={100,100,100,100,100,100,100,100,100,100,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-//const uint8_t vectorDutys[]={100, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const uint8_t vectorDutys[]={24, 45, 70, 80, 90, 90, 80, 70, 45, 24};
+//const uint8_t vectorDutys[]={50, 50, 50, 50, 50, 50, 50, 50, 50, 50};
+
+volatile uint8_t UpdateDuty;
+volatile uint32_t dutyOut0;
+volatile uint32_t dutyOut1;
 
 void Inicializar_SCTimer( void )
 {
@@ -20,7 +23,16 @@ void Inicializar_SCTimer( void )
 	SYSCON->SCTCLKSEL = 1;										// 1:Main clock 24MHz
 	SYSCON->SCTCLKDIV = 1;										// divided by n
 
+#ifdef RGBpWM
+	SWM0->PINASSIGN.PINASSIGN7 &= (~(0xff << (24)));			// SCT_OUT0 = PWM PIO1.0
+	SWM0->PINASSIGN.PINASSIGN7 |= (32 << (24));				//-> pin Green Led
 
+	SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (0)));				// SCT_OUT1 = PWM PIO1-2
+	SWM0->PINASSIGN.PINASSIGN8 |= (33 << (0));				// PIO1.2  OUT1 -> pin Blue Led
+
+	SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (8)));				// SCT_OUT2 = PWM PIO0.13
+	SWM0->PINASSIGN.PINASSIGN8 |= (13 << (8));					// PIO0.13 OUT2 -> pin 26
+#else
 	SWM0->PINASSIGN.PINASSIGN7 &= (~(0xff << (24)));			// SCT_OUT0 = PWM PIO0.8 -> pin 21
 	SWM0->PINASSIGN.PINASSIGN7 |= (8 << (24));
 
@@ -30,141 +42,147 @@ void Inicializar_SCTimer( void )
 	SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (8)));				// SCT_OUT2 = PWM PIO0.13
 	SWM0->PINASSIGN.PINASSIGN8 |= (13 << (8));					// PIO0.13 OUT2 -> pin 26
 
-	SCT0->CONFIG |= (1 << 0) | (1 << 17);
-	SCT0->SCTMATCH[0] = FREQ_PRINCIPAL/(PWM_FREQ*1);
-	SCT0->SCTMATCHREL[0] = FREQ_PRINCIPAL/(PWM_FREQ*1);
+#endif
 
-	SCT0->EVENT[0].STATE = 	0xFFFFFFFF;
-	SCT0->EVENT[0].CTRL = 	0 | (1 << 12);
 
-	SCT0->OUTPUT = 0xC;										//Esto no tiene efecto luego
-	SCT0->RES = 0b01010101;									//Habría que hacer pruebas
-	SCT0->EVEN = 1;
-	//SCT0->EVEN = 3;
+	SCT0->CONFIG |= (1 << 0) ;		// Unify 32 bits (sin el or también funciona )
+	SCT0->CTRL |= 	(1 << 18) | 	//Halt_H h counter doesn't run. Sin el or no funciona
+					(1 << 4) |  	//BIDIR_L up-down, up to limit, down to limit or 0
+					(1 << 1 )|
+					(SCT_PRESCALER-1) << 5;    	//STOP_L counter doesn't run
 
-	SCT0->EVENT[1].STATE = 	0xFFFFFFFF;
-	SCT0->EVENT[1].CTRL = 	1 | (1 << 12);		//Referido a Match1 Combmode 1== Match only
+	SCT0->SCTMATCH[0] = FREQ_PRINCIPAL/(PWM_FREQ*2);
+	SCT0->SCTMATCHREL[0] = FREQ_PRINCIPAL/(PWM_FREQ*2);
 
-	#ifdef	DUTYaCTIVOaLTO
-		SCT0->OUT[0].SET = 1;
-		SCT0->OUT[0].CLR = (1<<1);
-	#else
-		SCT0->OUT[0].SET = (1<<1);
-		SCT0->OUT[0].CLR = 1;
-	#endif
+	SCT0->EVENT[0].STATE = 	(1 << 0);		// event 0 happens in state 0
+	SCT0->EVENT[0].CTRL |= 	(1 << 12);		//Sin el or funciona también. Comb mode only Match
 
-	//SCT0->SCTMATCH[1] = FREQ_PRINCIPAL/(PWM_FREQ*2);
-	//SCT0->SCTMATCHREL[1] = FREQ_PRINCIPAL/(PWM_FREQ*2);
-
-	SCT0->SCTMATCH[1] = 0;						//Duty pwm1
+	//SCT0->SCTMATCH[1] = FREQ_PRINCIPAL/(PWM_FREQ*4);					//Duty pwm1
+	//SCT0->SCTMATCHREL[1] = FREQ_PRINCIPAL/(PWM_FREQ*4);					//Duty pwm1
+	SCT0->SCTMATCH[1] = 0;					//Duty pwm1
 	SCT0->SCTMATCHREL[1] = 0;					//Duty pwm1
 
-	//-------------------------------------------
-	SCT0->SCTMATCH[2] = FREQ_PRINCIPAL/(PWM_FREQ*1);
-	SCT0->SCTMATCHREL[2] = FREQ_PRINCIPAL/(PWM_FREQ*1);
+	SCT0->EVENT[1].STATE = 	(1 << 0);	// event 1 happens in state 0
+	SCT0->EVENT[1].CTRL |= 	(1 << 12) | ( 1 << 0) ;		//Referido a Match0 Combmode 1== Match only. Sin el or funciona también
 
-	SCT0->EVENT[2].STATE = 	0xFFFFFFFF;
-	SCT0->EVENT[2].CTRL = 	2 | (1 << 12);
-
-	SCT0->EVENT[3].STATE = 	0xFFFFFFFF;
-	SCT0->EVENT[3].CTRL = 	3 | (1 << 12);	//Referido a Match3 Combmode 1== Match only
 
 	#ifdef	DUTYaCTIVOaLTO
-		SCT0->OUT[1].SET = (1<<2);				//Actua en base a evento2
+		//SCT0->OUT[0].SET = 1;
+		SCT0->OUT[0].CLR = (1<<1);
+	#else
+		//SCT0->OUT[0].SET = 1;
+		SCT0->OUT[0].CLR = (1<<1);
+	#endif
+
+
+//---------------OUT 1---------------------------
+	SCT0->SCTMATCH[2] = FREQ_PRINCIPAL/(PWM_FREQ*2);
+	SCT0->SCTMATCHREL[2] = FREQ_PRINCIPAL/(PWM_FREQ*2);
+
+	SCT0->EVENT[2].STATE = 	(1 << 0);		// event 2 happens in state 0
+	SCT0->EVENT[2].CTRL = 	(1 << 12) | ( 1 << 0) ;		//Referido a Match0 Combmode 1== Match only. Sin el or funciona también
+
+	SCT0->EVENT[3].STATE = 	(1 << 0);	// event 3 happens in state 0
+	SCT0->EVENT[3].CTRL = 	(1 << 12) | ( 1 << 0) ;		//Referido a Match0 Combmode 1== Match only. Sin el or funciona también
+
+
+
+	#ifdef	DUTYaCTIVOaLTO
+		//SCT0->OUT[1].SET = (1<<2);				//Actua en base a evento2
 		SCT0->OUT[1].CLR = (1<<3);				//Actua en base a evento3
 	#else
-		SCT0->OUT[1].SET = (1<<3);				//Actua en base a evento3
+		//SCT0->OUT[1].SET = (1<<3);				//Actua en base a evento3
 		SCT0->OUT[1].CLR = (1<<2);				//Actua en base a evento2
 	#endif
 
-		//SCT0->SCTMATCH[3] = FREQ_PRINCIPAL/(PWM_FREQ*2);
-	//SCT0->SCTMATCHREL[3] = FREQ_PRINCIPAL/(PWM_FREQ*2);
 
-	SCT0->SCTMATCH[3] = 0;					//Duty pwm2
-	SCT0->SCTMATCHREL[3] = 0;				//Duty pwm2
+	//SCT0->SCTMATCH[3] = FREQ_PRINCIPAL/(PWM_FREQ*4);
+	//SCT0->SCTMATCHREL[3] = FREQ_PRINCIPAL/(PWM_FREQ*4);
+	SCT0->SCTMATCH[3] = 0;
+	SCT0->SCTMATCHREL[3] = 0;
+//--------------------------------------------------------------
 
-	//-------------------------------------------------
-	SCT0->SCTMATCH[4] = FREQ_PRINCIPAL/(PWM_FREQ*1);
-	SCT0->SCTMATCHREL[4] = FREQ_PRINCIPAL/(PWM_FREQ*1);
+	SCT0->LIMIT |= 1;
+	SCT0->OUTPUT |= (1 << 0) | ( 1 << 1);
 
-	SCT0->EVENT[4].STATE = 	0xFFFFFFFF;
-	SCT0->EVENT[4].CTRL = 	4 | (1 << 12);
+	SCT0->OUTPUTDIRCTRL = ( 1 << 1);
+	SCT0->EVEN = (1 << 0);
 
-	SCT0->EVENT[5].STATE = 	0xFFFFFFFF;
-	SCT0->EVENT[5].CTRL = 	5 | (1 << 12);		//Referido a Match5 Combmode 1== Match only
-
-	#ifdef	DUTYaCTIVOaLTO
-		SCT0->OUT[2].SET = (1<<4);					//Actua en base a evento4
-		SCT0->OUT[2].CLR = (1<<5);					//Actua en base a evento5
-	#else
-		SCT0->OUT[2].SET = (1<<5);					//Actua en base a evento5
-		SCT0->OUT[2].CLR = (1<<4);					//Actua en base a evento4
-	#endif
-	//SCT0->SCTMATCH[5] = FREQ_PRINCIPAL/(PWM_FREQ*2);
-	//SCT0->SCTMATCHREL[5] = FREQ_PRINCIPAL/(PWM_FREQ*2);
-
-	SCT0->SCTMATCH[5] = 0;						//Duty pwm3
-	SCT0->SCTMATCHREL[5] = 0;					//Duty pwm3
-	//-------------------------------------------------
 
 	NVIC->ISER[0] = (1 << 9);
 
 	SCT0->CTRL &= ~(1 << 2);					//Start SCTimer
 
-	PWM1_set( 65 );		//6.5
-	PWM2_set( 90 );		//9%
-	PWM3_set( 100 );	//10%
 
 }
 
 void SCTimer_Init( void )
 {
 	SYSCON->SYSAHBCLKCTRL0 |= (1 << 7) | (1 << 8);			// 8= SCTIMER 7=SWM
-		SYSCON->PRESETCTRL0 |= (1 << 8);			// 8= SCTIMER clear the timer reset
+	SYSCON->PRESETCTRL0 |= (1 << 8);			// 8= SCTIMER clear the timer reset
 
-		SYSCON->SCTCLKSEL = 1;										// 1:Main clock 48MHz
-		SYSCON->SCTCLKDIV = 1;										// divided by n
-
-
-		SWM0->PINASSIGN.PINASSIGN7 &= (~(0xff << (24)));			// SCT_OUT0 = PWM PIO0.8 -> pin 21
-		SWM0->PINASSIGN.PINASSIGN7 |= (8 << (24));
-
-		SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (0)));				// SCT_OUT1 = PWM PIO0.9
-		SWM0->PINASSIGN.PINASSIGN8 |= (9 << (0));					// PIO0.9 OUT1 -> pin 22
-
-		SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (8)));				// SCT_OUT2 = PWM PIO0.13
-		SWM0->PINASSIGN.PINASSIGN8 |= (13 << (8));					// PIO0.13 OUT2 -> pin 26
-
-		SCT0->CONFIG |= (1 << 0) | (1 << 17);
-		SCT0->SCTMATCH[0] = FREQ_PRINCIPAL/(PWM_FREQ*1);
-		SCT0->SCTMATCHREL[0] = FREQ_PRINCIPAL/(PWM_FREQ*1);
-
-		SCT0->EVENT[0].STATE = 	0xFFFFFFFF;
-		SCT0->EVENT[0].CTRL = 	0 | (1 << 12);
-
-		SCT0->OUTPUT = 0xC;
-		SCT0->RES = 0b01010101;
-		SCT0->EVEN = 1;
-
-		SCT0->EVENT[1].STATE = 	0xFFFFFFFF;
-		SCT0->EVENT[1].CTRL = 	1 | (1 << 12);		//Referido a Match1 Combmode 1== Match only
-		SCT0->OUT[0].SET = 1;
-		SCT0->OUT[0].CLR = (1<<1);
-
-		//SCT0->SCTMATCH[1] = FREQ_PRINCIPAL/(PWM_FREQ*2);
-		//SCT0->SCTMATCHREL[1] = FREQ_PRINCIPAL/(PWM_FREQ*2);
-
-		SCT0->SCTMATCH[1] = 0;
-		SCT0->SCTMATCHREL[1] = 0;
+	SYSCON->SCTCLKSEL = 1;										// 1:Main clock 48MHz
+	SYSCON->SCTCLKDIV = 1;										// divided by n
 
 
-		NVIC->ISER[0] = (1 << 9);
+	SWM0->PINASSIGN.PINASSIGN7 &= (~(0xff << (24)));			// SCT_OUT0 = PWM PIO0.8 -> pin 21
+	SWM0->PINASSIGN.PINASSIGN7 |= (32 << (24));
 
-		SCT0->CTRL &= ~(1 << 2);
+	SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (0)));				// SCT_OUT1 = PWM PIO0.9
+	SWM0->PINASSIGN.PINASSIGN8 |= (33 << (0));					// PIO0.9 OUT1 -> pin 22
 
-		PWM1_set( 90 );	//9%
+	SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (8)));				// SCT_OUT2 = PWM PIO0.13
+	SWM0->PINASSIGN.PINASSIGN8 |= (13 << (8));					// PIO0.13 OUT2 -> pin 26
+
+	SCT0->CONFIG |= (1 << 0) | (1 << 17);
+	SCT0->CTRL |= 	(SCT_PRESCALER-1) << 5;    	//
+
+	SCT0->SCTMATCH[0] = FREQ_PRINCIPAL/(PWM_FREQ*1) - 1;
+	SCT0->SCTMATCHREL[0] = FREQ_PRINCIPAL/(PWM_FREQ*1) - 1;		//delay
+	SCT0->SCTMATCHREL[1] = FREQ_PRINCIPAL/(PWM_FREQ*2) - 1;		//match_green_off
+	SCT0->SCTMATCHREL[2] = FREQ_PRINCIPAL/(PWM_FREQ*4) - 1;		//match_green_on
+	SCT0->SCTMATCHREL[3] = FREQ_PRINCIPAL/(PWM_FREQ*2) - 1;		//match_blue_off
+	SCT0->SCTMATCHREL[4] = FREQ_PRINCIPAL/(PWM_FREQ*4) - 1;		//match_blue_on
+
+	SCT0->EVENT[0].STATE = 	(1<<0);			// event 0 happens in state 0 (U_ENTRY)
+	SCT0->EVENT[0].CTRL = 	(0<<0) 		|	//related to match_cycle
+							(1<<12) 	|
+							(1<<14) 	|
+							(1<<15) ;
+
+
+	SCT0->EVENT[1].STATE = 	(1<<0);
+	SCT0->EVENT[1].CTRL = 	(3<<0) | (1 << 12);
+
+	SCT0->EVENT[2].STATE = 	(1<<0);
+	SCT0->EVENT[2].CTRL = 	(4<<0) | (1 << 12);
+
+	SCT0->EVENT[3].STATE = 	(1<<1);			// event 0 happens in state 0 (U_ENTRY)
+	SCT0->EVENT[3].CTRL = 	(0<<0) 		|	//related to match_cycle
+							(1<<12) 	|
+							(1<<14) 	|
+							(0<<15) ;
+
+	SCT0->EVENT[4].STATE = 	(1<<1);
+	SCT0->EVENT[4].CTRL = 	(2<<0) | (1 << 12);
+
+	SCT0->EVENT[5].STATE = 	(1<<1);
+	SCT0->EVENT[5].CTRL = 	(1<<0) | (1 << 12);
+
+
+	SCT0->OUT[0].SET = (1<<0) | (1 << 3) | (1 << 5);
+	SCT0->OUT[0].CLR = (1<<4);
+	SCT0->OUT[1].SET = (1<<0) | (1 << 1) | (1 << 3);
+	SCT0->OUT[1].CLR = (1<<2);
+
+	SCT0->OUTPUT |= 3;
+	SCT0->EVEN = 1;
+
+	NVIC->ISER[0] = (1 << 9);
+
+	SCT0->CTRL &= ~(1 << 2);
+
 }
-
 
 void SCT_Init(void)
 {
@@ -187,100 +205,103 @@ void SCT_Init(void)
 	SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (16)));			// SCT_OUT3 = PWM PIO0.11
 	SWM0->PINASSIGN.PINASSIGN8 |= (11 << (16));					// PIO0.11 OUT3 -> pin 24
 
-	SCT0->CONFIG |= (1 << 0) | (1 << 17);// unified timer, auto limit
-	SCT0->SCTMATCH[0] = pwm_cycle;
-	SCT0->SCTMATCHREL[0] = pwm_val1;
-	SCT0->SCTMATCH[1] = pwm_val1;
-	SCT0->SCTMATCHREL[1] = pwm_val2;
-	SCT0->SCTMATCH[2] = pwm_val2;
-	SCT0->SCTMATCHREL[2] = pwm_val3;
-	SCT0->SCTMATCH[3] = pwm_val3;
-	SCT0->SCTMATCHREL[3] = pwm_val4;
-	SCT0->SCTMATCH[4] = pwm_val4;// match 0 on PWM cycle
-	SCT0->SCTMATCHREL[4]= pwm_cycle;
+	SCT0->CONFIG |=  (1 << 17);// two 16 bits timers, auto limit at match 0
+	SCT0->CTRL	 |= (1<<4) | (SCT_PRESCALER-1) << 5;	//Bidir prescaler = 1
+
+	SCT0->EVEN = 1;
+
+	SCT0->SCTMATCH[0] = FREQ_PRINCIPAL/(PWM_FREQ*1) - 1;
+	SCT0->SCTMATCHREL[0] = FREQ_PRINCIPAL/(PWM_FREQ*1) - 1;
+
+	//SCT0->SCTMATCH[1] = FREQ_PRINCIPAL/(PWM_FREQ*1) - 1;	//0%
+	//SCT0->SCTMATCHREL[1] = FREQ_PRINCIPAL/(PWM_FREQ*1) - 1;
+
+	//SCT0->SCTMATCH[1] = 0;								//100%
+	//SCT0->SCTMATCHREL[1] = 0;
+
+	SCT0->SCTMATCH[1] = FREQ_PRINCIPAL/(PWM_FREQ*2) - 1;	//50%
+	SCT0->SCTMATCHREL[1] = FREQ_PRINCIPAL/(PWM_FREQ*2) - 1;
 
 	SCT0->EVENT[0].STATE = 0xFFFFFFFF; // event 0 happens in all states
-	SCT0->EVENT[0].CTRL= (0 << 0) | (1 << 12); // match 0 (pwm_cycle) only condition
-
-
-	SCT0->EVENT[1].STATE = 0xFFFFFFFF; // event 1 happens in all states
-	SCT0->EVENT[1].CTRL = (1 << 0) | (1 << 12); // match 1 (pwm_val1) only condition
-
-
-	SCT0->EVENT[2].STATE = 0xFFFFFFFF; // event 2 happens in all states
-	SCT0->EVENT[2].CTRL = (2 << 0) | (1 << 12); // match 2 (pwm_val2) only condition
-
-	SCT0->EVENT[3].STATE = 0xFFFFFFFF; // event 3 happens in all states
-	SCT0->EVENT[3].CTRL = (3 << 0) | (1 << 12); // match 3 (pwm_val3) only condition
-
-	SCT0->EVENT[4].STATE = 0xFFFFFFFF; // event 4 happens in all states
-	SCT0->EVENT[4].CTRL = (4 << 0) | (1 << 12); // match 4 (pwm_val4) only condition
-
-	SCT0->EVENT[5].STATE = 0xFFFFFFFF; // event 5 happens in all states
-	SCT0->EVENT[5].CTRL = (0 << 10) | (2 << 12); // IN_0 LOW only condition
+	SCT0->EVENT[0].CTRL= (1 << 0) | (1 << 12); // match 1 only condition
 
 	SCT0->OUT[0].SET = (1 << 0); // event 0 sets OUT0 (PWM1)
-	SCT0->OUT[0].CLR = (1 << 1) | (1 << 5 ); // event 1 and 5 clear OUT0 (PWM1)
+	SCT0->OUTPUTDIRCTRL = (1 << 0);	//reverse output when down counting
+	//-------------------------------------------------------
 
-	SCT0->OUT[1].SET = (1 << 0); // event 0 sets OUT1 (PWM2)
-	SCT0->OUT[1].CLR = (1 << 2) | (1 << 5 ); // event 2 and 5 clear OUT2 (PWM2)
+	SCT0->SCTMATCH[2] = FREQ_PRINCIPAL/(PWM_FREQ*1) - 1;
+	SCT0->SCTMATCHREL[2] = FREQ_PRINCIPAL/(PWM_FREQ*1) - 1;
 
-	SCT0->OUT[2].SET = (1 << 3) | (1 << 5 ); // event 3 and 5  sets OUT2 (PWM3)
-	SCT0->OUT[2].CLR = (1 << 0); // event 0 clear OUT2 (PWM3)
+	SCT0->EVENT[1].STATE = 0xFFFFFFFF; // event 0 happens in all states
+	SCT0->EVENT[1].CTRL= (3 << 0) | (1 << 12); // match 3 only condition
 
-	SCT0->OUT[3].SET = (1 << 4) | (1 << 5); // event 4 and 5 sets OUT3 (PWM4)
-	SCT0->OUT[3].CLR = (1 << 0); // event 0 and 5 clear OUT3 (PWM4)
+	SCT0->OUT[1].SET = (1 << 1); // event 1 sets OUT1 (PWM2)
+	SCT0->OUTPUTDIRCTRL = (1 << 2);	//reverse output when down counting
 
-	SCT0->OUTPUT = 0x0000000C; // default clear OUT0/1 and set OUT2/3
-
-	SCT0->RES = 0x0000005A; // conflict: Inactive state takes precedence
-							// SCT2_OUT0/1: Inactive state low
-							// SCT2_OUT2/3: Inactive state high
-
-	SCT0->HALT = ( 1 << 5); // event 5 will halt the timer
-	SCT0->LIMIT = ( 1 << 5); // event 5 will limit the timer
-	SCT0->EVEN = (1 << 0) | ( 1 << 5); // event 0 and 5 will generate an irq
-
+	//-------------------------------------------------------
 	NVIC->ISER[0] = (1 << 9); 					// enable interrupt ISE_SCT_IRQ EVFLAG SCT event
 
 	SCT0->CTRL &= ~(1 << 2);									// start timer
 }
+
 void PWM1_set(uint32_t value)
 {
 
+	SCT0->CTRL |= (1 << 2);									// Stop timer
 	if (value == 0)
+	{
 		SCT0->SCTMATCHREL[1] = 0;								// check val between 0% and 100%
+		SCT0->SCTMATCH[1] = 0;								//
+
+	}
 	else
 	{
-		if ( value >= CINCOpORCIENTO && value <= DIEZpORCIENTO)
+		if ( value > 0 && value < 100)
 		{
-			SCT0->SCTMATCHREL[1] = (value*DOScOMAcINCOmILIS)/DOCEcOMACINCOpORCIENTO;
+			SCT0->SCTMATCHREL[1] = (value * FULLpWM )/100;
 		}
 		else
 		{
-			SCT0->SCTMATCHREL[1] = FREQ_PRINCIPAL/(PWM_FREQ*1 - 1);				// set to 100% duty cycle
+			#ifdef DUTYaCTIVOaLTO
+	            SCT0->OUTPUT |= (1UL << 0);
+	        #else
+	            SCT0->OUTPUT &= ~(1UL << 0);
+	        #endif
+			SCT0->SCTMATCH[1] = FULLpWM + 2;
+			SCT0->SCTMATCHREL[1] = FULLpWM + 2;				// set to 100% duty cycle
 		}
-	}
 
+	}
+	SCT0->CTRL &= ~(1 << 2);									// start timer
 }
 
 void PWM2_set(uint32_t value)
 {
+	SCT0->CTRL |= (1 << 2);									// Stop timer
 
 	if (value == 0)
+	{
+		SCT0->SCTMATCH[3] = 0;								// check val between 0% and 100%
 		SCT0->SCTMATCHREL[3] = 0;								// check val between 0% and 100%
+	}
 	else
 	{
-		if ( value >= CINCOpORCIENTO && value <= DIEZpORCIENTO)
+		if ( value > 0 && value < 100)
 		{
-			SCT0->SCTMATCHREL[3] = (value*DOScOMAcINCOmILIS)/DOCEcOMACINCOpORCIENTO;
+			SCT0->SCTMATCHREL[3] = (value * FULLpWM )/100;
 		}
 		else
 		{
-			SCT0->SCTMATCHREL[3] = FREQ_PRINCIPAL/(PWM_FREQ*1 - 1);				// set to 100% duty cycle
+			#ifdef DUTYaCTIVOaLTO
+				SCT0->OUTPUT |= (1UL << 1);
+			#else
+				SCT0->OUTPUT &= ~(1UL << 1);
+			#endif
+			SCT0->SCTMATCH[3] = FULLpWM + 2;			// set to 100% duty cycle
+			SCT0->SCTMATCHREL[3] = FULLpWM + 2;			// set to 100% duty cycle
 		}
 	}
-
+	SCT0->CTRL &= ~(1 << 2);									// start timer
 }
 
 void PWM3_set(uint32_t value)
@@ -309,24 +330,32 @@ void SCT_IRQHandler(void)
 	uint32_t flagEvent;
 	flagEvent = SCT0->EVFLAG;
 
+	SCT0->EVEN &= ~(1);
+	SCT0->CTRL |= (1 << 2);									// Stop timer
+
+	UpdateDuty = 1;
 
 	if( flagEvent & 1 )
-		SCT0->EVFLAG |= ( 1 << 0);							// Reset interrupt event0 flag
+		SCT0->EVFLAG |= ( 1 << 0);			// Reset interrupt event0 flag
 
-	if( i == 100 )
+	if( i == 10 )
 	{
 		semiciclo = 1;
 	}
 
 	if( semiciclo )
 	{
-		PWM1_set(vectorDutys[i-100]);		//i de 100 a 200
+		//dutyOut0 = vectorDutys[i-10];		//i de 10 a 20
+		//dutyOut1 = 0;
 		PWM2_set(0);
+		PWM1_set(vectorDutys[i-10]);
 	}
 	else
 	{
-		PWM2_set(vectorDutys[i]);
+		//dutyOut1 = vectorDutys[i];
+		//dutyOut0 = 0;
 		PWM1_set(0);
+		PWM2_set(vectorDutys[i]);
 	}
 
 	i++;
@@ -335,6 +364,10 @@ void SCT_IRQHandler(void)
 		i = 0;
 		semiciclo = 0;
 	}
+
+	SCT0->EVEN |= (1);
+	SCT0->CTRL &= ~(1 << 2);									// Stop timer
+
 }
 
 
