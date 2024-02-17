@@ -9,7 +9,7 @@
 #include "gpio.h"
 
 const uint8_t vectorDutys[]={24, 45, 70, 80, 90, 90, 80, 70, 45, 24};
-//const uint8_t vectorDutys[]={50, 50, 50, 50, 50, 50, 50, 50, 50, 50};
+//const uint8_t vectorDutys[]={75, 25};
 
 volatile uint8_t UpdateDuty;
 volatile uint32_t dutyOut0;
@@ -102,8 +102,8 @@ void Inicializar_SCTimer( void )
 	SCT0->SCTMATCHREL[3] = 0;
 //--------------------------------------------------------------
 
-	SCT0->LIMIT |= 1;
-	SCT0->OUTPUT |= (1 << 0) | ( 1 << 1);
+	SCT0->LIMIT = 1;
+	SCT0->OUTPUT = (1 << 0) | ( 1 << 1);
 
 	SCT0->OUTPUTDIRCTRL = ( 1 << 1);
 	SCT0->EVEN = (1 << 0);
@@ -124,25 +124,39 @@ void SCTimer_Init( void )
 	SYSCON->SCTCLKSEL = 1;										// 1:Main clock 48MHz
 	SYSCON->SCTCLKDIV = 1;										// divided by n
 
+#ifdef RGBpWM
+	SWM0->PINASSIGN.PINASSIGN7 &= (~(0xff << (24)));			// SCT_OUT0 = Led
+	SWM0->PINASSIGN.PINASSIGN7 |= (21 << (24));					// PIO1.1 -> pin
 
-	SWM0->PINASSIGN.PINASSIGN7 &= (~(0xff << (24)));			// SCT_OUT0 = PWM PIO0.8 -> pin 21
-	SWM0->PINASSIGN.PINASSIGN7 |= (32 << (24));
-
-	SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (0)));				// SCT_OUT1 = PWM PIO0.9
-	SWM0->PINASSIGN.PINASSIGN8 |= (33 << (0));					// PIO0.9 OUT1 -> pin 22
+	SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (0)));				// SCT_OUT1 = Led
+	SWM0->PINASSIGN.PINASSIGN8 |= (22 << (0));					// PIO1.2 -> pin
 
 	SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (8)));				// SCT_OUT2 = PWM PIO0.13
 	SWM0->PINASSIGN.PINASSIGN8 |= (13 << (8));					// PIO0.13 OUT2 -> pin 26
+#else
+	SWM0->PINASSIGN.PINASSIGN7 &= (~(0xff << (24)));			// SCT_OUT0 = PWM PIO0.8 -> pin 21
+	SWM0->PINASSIGN.PINASSIGN7 |= (8 << (24));
+
+	SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (0)));				// SCT_OUT1 = PWM PIO0.9
+	SWM0->PINASSIGN.PINASSIGN8 |= (9 << (0));					// PIO0.9 OUT1 -> pin 22
+
+	SWM0->PINASSIGN.PINASSIGN8 &= (~(0xff << (8)));				// SCT_OUT2 = PWM PIO0.13
+	SWM0->PINASSIGN.PINASSIGN8 |= (13 << (8));					// PIO0.13 OUT2 -> pin 26
+#endif
 
 	SCT0->CONFIG |= (1 << 0) | (1 << 17);
 	SCT0->CTRL |= 	(SCT_PRESCALER-1) << 5;    	//
 
 	SCT0->SCTMATCH[0] = FREQ_PRINCIPAL/(PWM_FREQ*1) - 1;
 	SCT0->SCTMATCHREL[0] = FREQ_PRINCIPAL/(PWM_FREQ*1) - 1;		//delay
-	SCT0->SCTMATCHREL[1] = FREQ_PRINCIPAL/(PWM_FREQ*2) - 1;		//match_green_off
-	SCT0->SCTMATCHREL[2] = FREQ_PRINCIPAL/(PWM_FREQ*4) - 1;		//match_green_on
-	SCT0->SCTMATCHREL[3] = FREQ_PRINCIPAL/(PWM_FREQ*2) - 1;		//match_blue_off
-	SCT0->SCTMATCHREL[4] = FREQ_PRINCIPAL/(PWM_FREQ*4) - 1;		//match_blue_on
+	SCT0->SCTMATCH[1] = 0;		//match_green_off
+	SCT0->SCTMATCHREL[1] = 0;		//match_green_off
+	SCT0->SCTMATCH[2] = 0;		//match_green_on
+	SCT0->SCTMATCHREL[2] = 0;		//match_green_on
+	SCT0->SCTMATCH[3] = 0;		//match_blue_off
+	SCT0->SCTMATCHREL[3] = 0;		//match_blue_off
+	SCT0->SCTMATCH[4] = 0;		//match_blue_on
+	SCT0->SCTMATCHREL[4] = 0;		//match_blue_on
 
 	SCT0->EVENT[0].STATE = 	(1<<0);			// event 0 happens in state 0 (U_ENTRY)
 	SCT0->EVENT[0].CTRL = 	(0<<0) 		|	//related to match_cycle
@@ -170,12 +184,12 @@ void SCTimer_Init( void )
 	SCT0->EVENT[5].CTRL = 	(1<<0) | (1 << 12);
 
 
-	SCT0->OUT[0].SET = (1<<0) | (1 << 3) | (1 << 5);
-	SCT0->OUT[0].CLR = (1<<4);
-	SCT0->OUT[1].SET = (1<<0) | (1 << 1) | (1 << 3);
-	SCT0->OUT[1].CLR = (1<<2);
+	SCT0->OUT[0].CLR = (1 << 3) | (1 << 5);
+	SCT0->OUT[0].SET = (1<<4);
+	SCT0->OUT[1].CLR = (1 << 1) | (1 << 3);
+	SCT0->OUT[1].SET = (1<<2);
 
-	SCT0->OUTPUT |= 3;
+	SCT0->OUTPUT = 0;
 	SCT0->EVEN = 1;
 
 	NVIC->ISER[0] = (1 << 9);
@@ -338,7 +352,7 @@ void SCT_IRQHandler(void)
 	if( flagEvent & 1 )
 		SCT0->EVFLAG |= ( 1 << 0);			// Reset interrupt event0 flag
 
-	if( i == 10 )
+	if( i == CANTdUTYS/2 )
 	{
 		semiciclo = 1;
 	}
@@ -348,7 +362,7 @@ void SCT_IRQHandler(void)
 		//dutyOut0 = vectorDutys[i-10];		//i de 10 a 20
 		//dutyOut1 = 0;
 		PWM2_set(0);
-		PWM1_set(vectorDutys[i-10]);
+		PWM1_set(vectorDutys[i-(CANTdUTYS/2)]);
 	}
 	else
 	{
