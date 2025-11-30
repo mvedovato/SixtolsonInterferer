@@ -7,6 +7,9 @@
 
 #include "sctimer.h"
 #include "gpio.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 const uint8_t vectorDutys[]={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100};
 //const uint8_t vectorDutys[]={75, 25};
@@ -347,5 +350,28 @@ void ReloadSctimer( void )
 }
 
 uint8_t RandomIndex( void ){
-	return 0;
+
+	uint32_t valor = rand(), retorno;
+	float dec = sqrt(valor);
+	uint8_t vecDecimales[16], random[4];
+
+	retorno = 0;
+
+	sprintf( (char *)vecDecimales,"%f", dec);
+	for( int i = 7, j = 0; i < 16; i ++ ){
+		if( vecDecimales[i] != '.' && vecDecimales[i] >= '0' && vecDecimales[i] <= '9'){
+			random[j] = vecDecimales[i];
+			j ++;
+			if( j == 4 )
+				break;
+		}
+	}
+
+	for( int i = 0; i < 4; i++){
+		retorno *= 10;
+		retorno +=	random[i]-'0';
+
+	}
+	retorno %= CANTdUTYS;
+	return retorno;
 }

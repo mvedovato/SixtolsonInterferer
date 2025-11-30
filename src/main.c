@@ -48,7 +48,7 @@ int main(void)
     			PWM1_set(vectorDutys[i]);
     		}
     		else{
-    			PWM1_set(vectorDutys[i]);
+    			PWM1_set(vectorDutys[RandomIndex()]);
     		}
 
 
