@@ -35,7 +35,7 @@
 
 
 #define 	DECIMAS			1
-#define 	SEGUNDOS		10
+#define 	SEGUNDOS		1000
 #define 	MINUTOS			60
 
 #define 	EV_PWM1			0

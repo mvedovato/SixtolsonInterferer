@@ -19,8 +19,8 @@
 
 volatile uint16_t segundos = SEGUNDOS;
 extern  uint32_t tickes;	//!< Var for systick
+extern uint8_t flag1Segundo;
 
-extern const uint8_t vectorDutys[];
 
 void SysTick_Handler(void)
 {
@@ -34,6 +34,7 @@ void SysTick_Handler(void)
 	if(!segundos)
 	{
 		segundos = SEGUNDOS;
+		flag1Segundo = 1;
 
 	}
 

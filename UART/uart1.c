@@ -89,7 +89,7 @@ void Inicializar_UART1(uint32_t baudrate)
 
 	UART1CLKSEL = 1;
 
-	USART1->BRG = (FREQ_PRINCIPAL / baudrate) / 8;
+	USART1->BRG = (FREQ_PRINCIPAL / baudrate) / 16;
 
 	NVIC->ISER[0] = (1 << 4); /* enable interrupt */
 

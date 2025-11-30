@@ -17,6 +17,7 @@
 #include "io.h"
 #include "lcd.h"
 #include "ctimer.h"
+#include "uart0.h"
 #include "uart1.h"
 #include "teclado.h"
 #include "timers.h"

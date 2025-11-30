@@ -9,13 +9,17 @@
 */
 
 #include <SixtolsonInterferer.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 volatile uint32_t tickes = 10;	//!< Var for systick
 extern const uint8_t vectorDutys[];
+uint8_t flag1Segundo;
 int main(void)
 {
 
 	uint8_t i = 0, span = 100, tecla, flagTecla = 0, modo = 0, dutyFree = 50;
+	uint8_t buffer[40];
 	Inicializar();
 	Display_LCD( (uint8_t *)"Interfer of" , 0 , 0 ) ;
 	Display_LCD( (uint8_t *)"Sixtolson" , 1 , 0 ) ;
@@ -88,7 +92,11 @@ int main(void)
     		break;
     	}
 
-
+    	if( flag1Segundo ){
+    		flag1Segundo = 0;
+    		sprintf((char *)buffer,"duty: %d span: %d \n", dutyFree, span);
+    		UART1_Send(buffer, strlen((char *)buffer));
+    	}
 
     }
     return 0 ;
