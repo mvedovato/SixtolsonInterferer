@@ -94,7 +94,7 @@ int main(void)
 
     	if( flag1Segundo ){
     		flag1Segundo = 0;
-    		sprintf((char *)buffer,"duty: %d span: %d \n", dutyFree, span);
+    		sprintf((char *)buffer,"duty: %d span: %d vecDutys: %d \n", dutyFree, span, vectorDutys[i]);
     		UART1_Send(buffer, strlen((char *)buffer));
     	}
 

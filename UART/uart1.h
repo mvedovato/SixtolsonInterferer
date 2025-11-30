@@ -12,8 +12,8 @@
 #include "teclado.h"
 #include <string.h>
 
-#define		UART1_TAMANIO_COLA_RX					20
-#define		UART1_TAMANIO_COLA_TX					20
+#define		UART1_TAMANIO_COLA_RX					40
+#define		UART1_TAMANIO_COLA_TX					40
 #define		PIN_ENABLE485							0,0
 
 
