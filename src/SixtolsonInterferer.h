@@ -5,8 +5,8 @@
  *      Author: mariano
  */
 
-#ifndef INVERSOR_H_
-#define INVERSOR_H_
+#ifndef SIXTOLSONINTERFERER_H_
+#define SIXTOLSONINTERFERER_H_
 
 
 #include <cr_section_macros.h>
@@ -32,6 +32,12 @@
 #define		GRADO					SPAN/180	//69,44 (5,55 us por grado)
 #define 	REPETICIONgRADOS		9
 
+#define 	FREE					0
+#define 	SWEEP					1
+#define 	RANDOM					2
+
+#define 	CANTmODOS				3
+
 void Inicializar( void );
 
-#endif /* INVERSOR_H_ */
+#endif /* SIXTOLSONINTERFERER_H_ */

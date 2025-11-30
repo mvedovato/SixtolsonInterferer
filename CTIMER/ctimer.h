@@ -8,10 +8,10 @@
 #ifndef CTIMER_H_
 #define CTIMER_H_
 
+#include <SixtolsonInterferer.h>
 #include "gpio.h"
 #include "io.h"
 #include "tipos.h"
-#include "Inversor.h"
 
 
 //#define MATCH0		24		//IRQ=7,5us

@@ -4,7 +4,7 @@
  *  Created on: 16 ago. 2021
  *      Author: mariano
  */
-#include <Inversor.h>
+#include <SixtolsonInterferer.h>
 
 void Inicializar( void )
 {

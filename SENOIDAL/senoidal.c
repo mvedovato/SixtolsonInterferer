@@ -6,7 +6,7 @@
  */
 
 
-#include <Inversor.h>
+#include <SixtolsonInterferer.h>
 
 
 uint32_t Senoidal( int16_t valor)
