@@ -8,7 +8,7 @@
 #include "sctimer.h"
 #include "gpio.h"
 
-const uint8_t vectorDutys[]={24, 45, 70, 80, 90, 90, 80, 70, 45, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const uint8_t vectorDutys[]={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100};
 //const uint8_t vectorDutys[]={75, 25};
 
 void Inicializar_SCTimer( void )
@@ -265,8 +265,8 @@ void PWM1_set(uint32_t value)
 	        #else
 	            SCT0->OUTPUT &= ~(1UL << 0);
 	        #endif
-			SCT0->SCTMATCH[1] = FULLpWM + 2;
-			SCT0->SCTMATCHREL[1] = FULLpWM + 2;				// set to 100% duty cycle
+			SCT0->SCTMATCH[1] = FULLpWM;
+			SCT0->SCTMATCHREL[1] = FULLpWM;				// set to 100% duty cycle
 		}
 
 	}
@@ -324,31 +324,16 @@ void PWM3_set(uint32_t value)
 
 void SCT_IRQHandler(void)
 {
-	static uint8_t i = 0;
 	uint32_t flagEvent;
 	flagEvent = SCT0->EVFLAG;
 
-	SCT0->EVEN &= ~(1);
-	SCT0->CTRL |= (1 << 2);									// Stop timer
 
 	if( flagEvent & 1 )
 		SCT0->EVFLAG |= ( 1 << 0);			// Reset interrupt event0 flag
 
 
-	PWM1_set(vectorDutys[i]);
-	if( i < 10 )
-		PWM2_set(vectorDutys[i + CANTdUTYS/2 ]);
-	else
-		PWM2_set(vectorDutys[i - CANTdUTYS/2 ]);
 
-	i++;
-	if( i == CANTdUTYS )
-	{
-		i = 0;
-	}
 
-	SCT0->EVEN |= (1);
-	SCT0->CTRL &= ~(1 << 2);									// Stop timer
 
 }
 
@@ -359,4 +344,8 @@ void ReloadSctimer( void )
 	SCT0->CTRL |= (1<<2);						// Set bit 2 halt to halt timer
 	Inicializar_SCTimer( );
 
+}
+
+uint8_t RandomIndex( void ){
+	return 0;
 }

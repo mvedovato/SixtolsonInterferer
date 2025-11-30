@@ -18,7 +18,7 @@
 #define MAX_TICKS 	0xffffff
 
 volatile uint16_t segundos = SEGUNDOS;
-extern  int32_t tickes;	//!< Var for systick
+extern  uint32_t tickes;	//!< Var for systick
 
 extern const uint8_t vectorDutys[];
 
@@ -29,7 +29,8 @@ void SysTick_Handler(void)
 	TECLADO_Barrido( );
 	Debounce( );
 	segundos--;
-	tickes --;	//!< Var for systick
+	if( tickes )
+		tickes --;	//!< Var for systick
 	if(!segundos)
 	{
 		segundos = SEGUNDOS;

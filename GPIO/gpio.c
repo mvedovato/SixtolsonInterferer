@@ -9,7 +9,12 @@
 
 #include "gpio.h"
 
+
 #include <LPC845.h>
+
+#define 	PULSADOR_FRENTE_1		0,4
+#define 	PULSADOR_ISP			0,12
+
 
 void Inicializar_GPIO(void)
 {
@@ -24,6 +29,13 @@ void Inicializar_GPIO(void)
 
 	GPIO_Dir( PIN_ROJO, 1 );
 	GPIO_Set( PIN_ROJO, LED_OFF );
+
+	GPIO_Dir( PULSADOR_FRENTE_1, 0 );
+	GPIO_Set( PULSADOR_FRENTE_1, 0);
+
+	GPIO_Dir( PULSADOR_ISP, 0 );
+	GPIO_Set( PULSADOR_ISP, 0);
+
 
 	GPIO_Dir( PWM1, 1 );
 	GPIO_Set( PWM1, 0 );

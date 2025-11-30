@@ -30,6 +30,7 @@
 #define		TECLADO_COLUMNA_3		0,8
 
 #define 	PULSADOR_FRENTE_1		0,4
+#define 	PULSADOR_ISP			0,12
 
 
 #define		CANTIDAD_DE_REBOTES		10
@@ -185,39 +186,12 @@ void TECLADO_Barrido_SW( uint8_t CodigoActual )
 //==============================================================================================
 uint8_t TECLADO_Barrido_HW(void)
 {
-	// Funcion de barrido de teclado de 3x2
-	// Barro fila 1
-	GPIO_Set(TECLADO_FILA_1, 0);
-	GPIO_Set(TECLADO_FILA_2, 1);
 
-	if(!GPIO_Read(TECLADO_COLUMNA_1))
+	if(!GPIO_Read(PULSADOR_FRENTE_1))
 		return CODIGO_TECLA_0;
-	if(!GPIO_Read(TECLADO_COLUMNA_2))
+
+	if(!GPIO_Read(PULSADOR_ISP))
 		return CODIGO_TECLA_1;
-	if(!GPIO_Read(TECLADO_COLUMNA_3))
-		return CODIGO_TECLA_2;
-
-	// Barro fila 2
-	GPIO_Set(TECLADO_FILA_1, 1);
-	GPIO_Set(TECLADO_FILA_1, 1);
-	GPIO_Set(TECLADO_FILA_1, 1);
-	GPIO_Set(TECLADO_FILA_1, 1);
-	GPIO_Set(TECLADO_FILA_1, 1);
-	GPIO_Set(TECLADO_FILA_1, 1);
-	GPIO_Set(TECLADO_FILA_1, 1);
-	GPIO_Set(TECLADO_FILA_2, 0);
-	GPIO_Set(TECLADO_FILA_2, 0);
-	GPIO_Set(TECLADO_FILA_2, 0);
-	GPIO_Set(TECLADO_FILA_2, 0);
-	GPIO_Set(TECLADO_FILA_2, 0);
-	GPIO_Set(TECLADO_FILA_2, 0);
-
-	if(!GPIO_Read(TECLADO_COLUMNA_1))
-		return CODIGO_TECLA_3;
-	if(!GPIO_Read(TECLADO_COLUMNA_2))
-		return CODIGO_TECLA_4;
-	if(!GPIO_Read(TECLADO_COLUMNA_3))
-		return CODIGO_TECLA_5;
 
   	return NO_KEY;
 }

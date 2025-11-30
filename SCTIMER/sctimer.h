@@ -17,8 +17,8 @@
 #define OUT0					0
 #define OUT1					1
 #define SCT_PRESCALER			1
-#define	CANTdUTYS				20
-#define PWM_FREQ				2000
+#define	CANTdUTYS				21
+#define PWM_FREQ				10000
 #define PWM_PERIOD				(FREQ_PRINCIPAL / (PWM_FREQ * 1))	//
 #define PWM_STEP				(PWM_PERIOD / STEPSpWM)		// PWM resolution in PWM_STEP steps
 #define	FULLpWM					PWM_PERIOD
@@ -50,5 +50,6 @@ void PWM3_set(uint32_t );
 void Inicializar_SCTimer( void );
 void ReloadSctimer( void );
 void SCT_Init(void);
+uint8_t RandomIndex( void );
 
 #endif /* SCTIMER_H_ */

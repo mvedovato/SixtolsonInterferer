@@ -17,8 +17,8 @@ void Inicializar( void )
     //Inicializar_IO();
     Inicializar_UART1(9600);
     //Inicializar_LCD(  );
-    //SCT_Init( );
-    SCTimer_Init();
+    SCT_Init( );
+    //SCTimer_Init();
     //Inicializar_SCTimer( );
 
 

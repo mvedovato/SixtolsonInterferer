@@ -769,8 +769,7 @@ __STATIC_INLINE void __NVIC_DisableIRQ(IRQn_Type IRQn)
   if ((int32_t)(IRQn) >= 0)
   {
     NVIC->ICER[0U] = (uint32_t)(1UL << (((uint32_t)IRQn) & 0x1FUL));
-    __DSB();
-    __ISB();
+
   }
 }
 
@@ -920,15 +919,15 @@ __STATIC_INLINE uint32_t __NVIC_GetVector(IRQn_Type IRQn)
  */
 __STATIC_INLINE void __NVIC_SystemReset(void)
 {
-  __DSB();                                                          /* Ensure all outstanding memory accesses included
+                                                        /* Ensure all outstanding memory accesses included
                                                                        buffered write are completed before reset */
   SCB->AIRCR  = ((0x5FAUL << SCB_AIRCR_VECTKEY_Pos) |
                  SCB_AIRCR_SYSRESETREQ_Msk);
-  __DSB();                                                          /* Ensure completion of memory access */
+                                                         /* Ensure completion of memory access */
 
   for(;;)                                                           /* wait until reset */
   {
-    __NOP();
+
   }
 }
 
